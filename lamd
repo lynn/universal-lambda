@@ -1,0 +1,84 @@
+#!/usr/local/bin/ruby
+def decompile(s, depth=0)
+  s.sub!(/00|01|1+0/,'') or abort("decompile error: no parse %p" % s)
+  case $&
+  when '00'
+    [:lambda,decompile(s, depth+1)]
+  when '01'
+    [:apply,decompile(s, depth),decompile(s, depth)]
+  else
+    abort("decompile error: de Bruijn index too large") if $&.size-1>depth
+    [:id,$&.size-1]
+  end
+end
+
+def nthvar(x)
+  (?a+x%26).chr+(x>25 ? (x/26).to_s : '')
+end
+
+def reduce(tree) #combine multiple lambdas, use assignment
+  a,b,c=*tree
+  case a
+  when :lambda
+    [:lambda,reduce(b)]
+  when :apply
+    b=reduce(b)
+    c=reduce(c)
+    if b[0] == :lambda
+      [:assign,c,b[1]]
+    else
+      [:apply,b,c]
+    end
+  when :id
+    tree
+  end
+end
+
+def isassign(tree)
+  a,b,c=*tree
+  case a
+  when :lambda
+    false
+  when :apply
+    isassign(b)
+  when :id
+    false
+  when :assign
+    true
+  end
+end
+
+#todo minimally paranthesize lambdas and assignments
+#if shrinker could smartly reduce scope, paren not needed at all for assignment
+def helper(tree,depth,side,indent)
+  a,b,c=*tree
+  case a
+  when :lambda
+    vars=[nthvar(depth)]
+    while b[0]==:lambda
+      vars<<nthvar(depth+=1)
+      b=b[1]
+    end
+    rhs=if isassign(b)
+      "\n"+indent+"  "+helper(b,depth+1, nil, indent + "  ") + "\n" + indent
+    else
+      helper(b,depth+1, nil, indent)
+    end
+    '(\\%s.%s)' % [vars*' ',rhs]
+  when :apply
+    (side == :right ? '(%s %s)' : '%s %s') % [helper(b,depth,:left, indent),helper(c,depth,:right,indent)]
+  when :id
+    nthvar(depth-b)
+  when :assign
+    "(%s = %s\n%s%s)" % [nthvar(depth), helper(b, depth, nil, indent), indent, helper(c, depth + 1, nil, indent)]
+  end
+end
+
+def pretty(tree)
+  helper(reduce(tree),0,false,'')
+end
+
+ast=decompile(input=gets(nil).unpack("B*")[0])
+puts pretty(ast)
+t=[input[input.size%8..-1]].pack("B*")
+print t.inspect[0..-2] if !t.empty?

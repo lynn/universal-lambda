@@ -1,0 +1,318 @@
+#!/usr/local/bin/ruby
+'
+# = comment line
+a=b \n = assignment -
+  all assignments are final, scope till next )
+  if reassignment, it really is a new nested variable
+  assignments are inline if shorter
+\ . = lambda expression
+( ) = parenthesis
+a a = function application
+a = variable access
+prepend = rest of file prepended to input (todo)
+whitespace =ignored
+all others =error
+
+possible future features
+assignment can assign to symbols, adding to lex items (** = pow)
+numbers / strings
+operators
+, notation for function arguments - a(b,c) = (a (b) (c))
+haskell style function declaration - f x=x x
+irb type thing
+indentation based parenthesis
+
+'
+
+'errors
+\. \( \) \\ \=
+()
+incorrect right bracket
+symbol not in scope
+=======
+'
+
+def error(msg)
+  pp=$pos+1
+  line=''
+  while pp>0 && line.strip.size==0
+    pp-=1
+    line=$input[pp-1-$input[0,pp].reverse.index("\n")...pp].strip
+  end
+  if pp!=$errors.last
+    STDERR.puts msg
+    STDERR.puts '    from %s:%d: '%[$filename,$input[0,pp].count("\n")+1]+line
+    $errors<<pp
+  end
+end
+def unexpect(t, should=nil)
+  error("Unexpected %p"%t+(should ? ", expecting %s"%should : ""))
+end
+
+def step(usenewline=false)
+  return $unstep.pop if $unstep.size>0
+  bad=''
+  $rhs=~/^(#{usenewline ? "[ \\t]":"\\s"}*(\#.*)?)*/
+  $rhs=$'
+  $pos+=$&.size
+  return :eof if $rhs==''
+  t=$rhs[/#{ID}|./m]
+  $rhs=$'
+  $pos+=$&.size
+  t
+end
+
+def peek
+  return $unstep[0] if $unstep.size>0
+  $rhs=~/^(\s*(\#.*)?)*/
+  return :eof if $'==''
+  $'[/#{ID}|./m]
+end
+
+def unstep(c)
+  $unstep<<c
+end
+
+ID=/[a-zA-Z0-9_]+/m
+Bracket={:bof=>:eof,'('=>')','='=>"\n"}
+
+def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
+  r=case t=step(lhs&&lb=='=')
+  when ID
+    if peek=='='
+      rhs=parseh(vars,depth,nil,step)
+      vars=vars.dup
+      vars[t]=depth+=1
+      return [:apply, [:lambda, parseh(vars, depth, lhs,lb,lambda)], rhs]
+    else
+      if !vars[t]
+        error('Symbol not in scope: %p'%t)
+        vars[t]=0
+      end
+      [:id, depth-vars[t]+1]
+    end
+  when "\\"
+    v=step
+    unless ID===v
+      unexpect(v, "identifier")
+      exit(1) if v==:eof
+      unstep(v) if v=='.'
+    end
+    if '.'==peek
+      step
+    else
+      unstep(t)
+    end
+    vars=vars.dup
+    vars[v]=depth+=1
+    [:lambda, parseh(vars, depth, nil,lb,true)]
+  when '('
+    parseh(vars, depth, nil,t)
+  when ')',:eof,"\n","'",'"'
+    if t=='"'
+      $prepend=eval'"'+$rhs+'"'
+      t=:eof
+    elsif t=="'"
+      $prepend=$rhs
+      t=:eof
+    end
+    if t!=Bracket[lb]
+      unexpect(t,lhs ? '%p'%Bracket[lb] : "expression")
+      exit(1) if t==:eof
+      unstep(t) if lb=='='#lb.any?{|i|Bracket[i]==t} && !lambda
+    elsif !lhs
+      error("Empty expression before %p"%Bracket[lb])
+    end
+    unstep(t) if lambda
+    return lhs unless lb==:bof && t != :eof
+  else
+    unexpect(t)
+  end
+  
+  r=[:apply,lhs,r] if lhs
+  parseh(vars, depth, r,lb,lambda)
+end
+
+def parse(s)
+  $input=$rhs=(#File.read('prelude.lam')+
+  s
+  )
+  $pos=0
+  $errors=[]
+  $unstep=[]
+  $prepend=""
+  
+  tree=parseh
+  exit(1) if $errors.size>0
+  tree
+end
+
+def compile(tree)
+  a,b,c=*tree
+  case a
+  when :apply
+    '01'+compile(b)+compile(c)
+  when :id
+    '1'*b+'0'
+  when :lambda
+    '00'+compile(b)
+  end
+end
+
+def size(tree)
+  compile(tree).size
+end
+
+##todo for constants, find best order of dapplying lambdas (topological sort)
+##todo find if 2 things are assigned to same thing
+def maxfree(tree,depth=0) #todo smarter this
+  a,b,c=*tree
+  case a
+  when :apply
+    maxfree(b,depth) + maxfree(c,depth)
+  when :lambda
+    maxfree(b, depth+1)
+  when :id
+    depth - b < 0 ? 9999 : 0
+  end
+end
+def free(tree)
+  s=0
+  each_free(tree){s+=1}
+  s
+end
+def each_arg(tree,depth=0,&block)
+  a,b,c=*tree
+  case a
+  when :apply
+    [a,each_arg(b,depth,&block),
+    each_arg(c,depth,&block)]
+  when :lambda
+    [a,each_arg(b,depth+1,&block)]
+  when :id
+    if b==depth
+      yield(depth)
+    else
+      tree
+    end
+  end
+end
+def each_free(tree,depth=0,&block)
+  a,b,c=*tree
+  case a
+  when :apply
+    [a,each_free(b,depth,&block),
+    each_free(c,depth,&block)]
+  when :lambda
+    [a,each_free(b,depth+1,&block)]
+  when :id
+    if b>depth
+      yield(b)
+    else
+      tree
+    end
+  end
+end
+
+def dapply(a,b,d)
+  each_free(
+    each_arg(a){|depth|each_free(b){|v|[:id,v+depth+d]}}
+  ){|v|[:id,v-1]}[1]
+end
+
+def nlambda(tree,d=0,depth=0,&block)
+  a,b,c=*tree
+  case a
+  when :lambda
+    if d==0
+      yield(tree,depth)
+    else
+      r=nlambda(b,d-1,depth+1,&block)
+      r && [a, r]
+    end
+  when :apply
+    r = nlambda(b,d+1,depth,&block)
+    r && [a, r, c]
+  when :id
+    nil
+  end
+end
+
+def safe(tree)
+  a,b,c=*tree
+  case a
+  when :apply
+    b=safe(b)
+    c=safe(c)
+    r=nlambda(b){|t2,d2|
+    	cs = size(c)
+    	mf = maxfree(c)
+    	sum=0
+    	each_arg(t2){|depth|sum+=depth+1-cs-(depth+d2-1)*mf}
+      4+cs+sum>0 && dapply(t2,c,d2)
+    }
+    r ? safe(r) : [a,b,c]
+  when :id
+    tree
+  when :lambda
+    [a,safe(b)]
+  end
+end
+
+def greedy(tree)
+  a,b,c=*tree
+  case a
+  when :apply
+    b=greedy(b)
+    c=greedy(c)
+    r=nlambda(b){|t2,d2|
+    	cs = size(c)
+    	mf = free(c)
+    	sum=0
+    	each_arg(t2){|depth|sum+=depth+1-cs-(depth+d2-1)*mf}
+      4+cs+sum+free(t2)>0 && dapply(t2,c,d2)
+    }
+    r ? greedy(safe(r)) : [a,b,c]
+  when :id
+    tree
+  when :lambda
+    [a,greedy(b)]
+  end
+end
+
+def brute(tree)
+  a,b,c=*tree
+  case a
+  when :apply
+    regular=[a,brute(b),brute(c)]
+    r=nlambda(b){|t2,d2|dapply(t2,c,d2)}
+    if r
+      [greedy(safe(r)),regular].min_by{|t|size(t)}
+    else
+      regular
+    end
+  when :id
+    tree
+  when :lambda
+    [a,brute(b)]
+  end
+end
+
+def shrink(tree)
+  tree=greedy(safe(tree))
+  begin
+    o=size(tree)
+    tree=brute(tree)
+  end while size(tree) < o
+  tree
+end
+
+$filename=$*[0]
+ast=parse(gets(nil))
+STDERR.puts'size = %d bits'%size(ast)
+ast=shrink(ast)
+STDERR.puts'optimized = %d bits'%size(ast)
+f = $filename ? File.open("%s.lamb"%$filename[/(.*?)(\.[^.]+)?$/,1],"w") : STDOUT
+f << [compile(ast)].pack("B*")
+f << $prepend
+STDERR.puts'prepended input = %d bytes' % $prepend.size if !$prepend.empty?

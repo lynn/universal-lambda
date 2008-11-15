@@ -1,0 +1,28 @@
+Run make to compile lamb, needs ghc. Everything else needs ruby (1.8).
+
+lamb = run a lambda binary file
+lama = assemble plain lambda file into binary
+lamd = disassemble binary into plain
+
+usages:
+
+lamb sourcefile.lamb < inputfile
+
+lama sourcefile.lam #output goes in file sourcefile.lamb
+or
+lama < sourcefile.lam #output goes to stdout
+
+lamd sourcefile.lamb
+or
+lamd < sourcefile.lamb
+#output goes to stdout
+
+
+Small tutorial: http://golfscript.com/lam/
+
+Changes:
+2008-11-14: removed buffering in output, can output invalid list until fail
+            removed barrier between source file and input, these are all equivalent now
+				lamb file.lamb < input.txt
+				cat file.lamb input.txt | lamb
+				lamb file.lamb input.txt < /dev/null
