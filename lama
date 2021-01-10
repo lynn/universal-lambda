@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 '
 # = comment line
 a=b \n = assignment -
@@ -78,19 +78,6 @@ Bracket={:bof=>:eof,'('=>')','='=>"\n"}
 
 def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
   r=case t=step(lhs&&lb=='=')
-  when ID
-    if peek=='='
-      rhs=parseh(vars,depth,nil,step)
-      vars=vars.dup
-      vars[t]=depth+=1
-      return [:apply, [:lambda, parseh(vars, depth, lhs,lb,lambda)], rhs]
-    else
-      if !vars[t]
-        error('Symbol not in scope: %p'%t)
-        vars[t]=0
-      end
-      [:id, depth-vars[t]+1]
-    end
   when "\\"
     v=step
     unless ID===v
@@ -125,6 +112,19 @@ def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
     end
     unstep(t) if lambda
     return lhs unless lb==:bof && t != :eof
+  when ID
+    if peek=='='
+      rhs=parseh(vars,depth,nil,step)
+      vars=vars.dup
+      vars[t]=depth+=1
+      return [:apply, [:lambda, parseh(vars, depth, lhs,lb,lambda)], rhs]
+    else
+      if !vars[t]
+        error('Symbol not in scope: %p'%t)
+        vars[t]=0
+      end
+      [:id, depth-vars[t]+1]
+    end
   else
     unexpect(t)
   end
