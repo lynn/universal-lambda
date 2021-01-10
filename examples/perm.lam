@@ -1,0 +1,22 @@
+false=\a b.b
+true=\a b.a
+cons=\a b x.x a b #place a character at the front of a string
+Y=\f.(\x.x x)(\x.f (x x)) #Y combinator
+foldr=\f init.Y(\self list.list (\lhs rhs init.f lhs (self rhs)) init)
+concat=\a b.foldr cons b a #concatenate two strings 
+rcons=\a b.concat a (cons b false) #append a character to a string
+null=\list.list (\a b i.false) true #return true if list is empty
+inc=\n f x.f (n f x) #add 1 to a church numeral
+pow=\a b.b a
+2=(inc \a.a)
+3=inc 2
+10=inc (pow 3 2) #ascii value of newline
+inject=Y \self init a block.
+  a (\lhs rhs empty.
+    concat (block init a) (self (rcons init lhs) rhs block)
+  ) false
+perm=Y \self pre s.
+  null s (rcons pre 10) (
+  inject false s \left right.
+    self (rcons pre (right true)) (concat left (right false)))
+perm false
