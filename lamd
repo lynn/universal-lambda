@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 def decompile(s, depth=0)
   s.sub!(/00|01|1+0/,'') or abort("decompile error: no parse %p" % s)
   case $&
@@ -13,7 +13,7 @@ def decompile(s, depth=0)
 end
 
 def nthvar(x)
-  (?a+x%26).chr+(x>25 ? (x/26).to_s : '')
+  (?a.ord+x%26).chr+(x>25 ? (x/26).to_s : '')
 end
 
 def reduce(tree) #combine multiple lambdas, use assignment
