@@ -1,3 +1,2 @@
 #!/usr/bin/env bash
-./lama $1.lam
-./lamb $1.lamb
+./lama $1.lam && ./lamb $1.lamb
