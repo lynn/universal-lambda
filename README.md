@@ -1,5 +1,5 @@
 # Universal Lambda
-Universal Lambda is a purely functional [esolang](https://en.wikipedia.org/wiki/Esoteric_programming_language) made by Darren "flagitious" Smith in 2008, based on John Tromp's [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html). You can [code golf](https://en.wikipedia.org/wiki/Code_golf) in it on [anarchy golf](https://golf.shinh.org).
+Universal Lambda is a purely functional [esolang](https://en.wikipedia.org/wiki/Esoteric_programming_language) made by Darren "flagitious" Smith in 2008, based on John Tromp's [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html). You can [code golf](https://en.wikipedia.org/wiki/Code_golf) in it on [anarchy golf](http://golf.shinh.org). It is similar to [Lazy-K](https://esolangs.org/wiki/Lazy-K), but more compact.
 
 I'm maintaining the interpreter and tools here now, so that they work with recent versions of Haskell and Ruby. The original site is [here](http://web.archive.org/web/20200707185352/http://www.golfscript.com/lam/).
 
@@ -24,7 +24,7 @@ So, the lambda term _λf. (λs. s s)(λx. f (x x))_ is encoded as:
     00  01 00 01 10 10  00  01 110 01 10 10
     λf.  ( λs. ( s  s)) λx.  ( f    ( x  x))
 
-If there are leftover bits in the last byte when parsing your program term, they are ignored. For example, the identity program `00 10` may be represented by any single-byte program of the form `0010xxxx` (so any byte between `0x20` and `0x2F`).
+In practice, files consist of bytes. If there are leftover bits in the last byte when parsing your program term, they are ignored. For example, the identity program `00 10` is represented by any single-byte program of the form `0010xxxx` (so any byte between `0x20` and `0x2F`).
 
 The contents of STDIN are encoded into a lambda term as described below. Your program term is applied to this term, and the result is decoded back into a byte stream in the same format.
 
@@ -33,30 +33,28 @@ The contents of STDIN are encoded into a lambda term as described below. Your pr
 The I/O format is a linked list of Church numerals between 0 and 255, in the following list encoding:
 
     0 = λf x.x
-    1 = λf x.fx
-    2 = λf x.f(fx)
-    3 = λf x.f(f(fx))
+    1 = λf x.f x
+    2 = λf x.f(f x)
+    3 = λf x.f(f(f x))
     ...
     cons = λh t f.f h t
     head = λp.p(λh t.h)
     tail = λp.p(λh t.t)
     nil = λa b.b
 
-So, if STDIN contains the string `"abc\n"` then your input will be the lambda term `(cons 97 (cons 98 (cons 99 (cons 10 nil))))` in this encoding.
-
-If your program is the term `tail` (i.e. `λp.p(λh t.t)`, i.e. `18 20` in hex) then your output will be `"bc\n"`. See the `unchurch` and `unlist` functions in `lamb.hs`.
+So, if STDIN contains the string `"abc\n"` then your program is applied to _(cons 97 (cons 98 (cons 99 (cons 10 nil))))_ in this encoding. And if your program is `tail` (i.e. `λp.p(λh t.t)`, i.e. `18 20` in hex) then your output will be `"bc\n"`. See the `unchurch` and `unlist` functions in `lamb.hs`.
 
 ## The "data section"
 
 If there are leftover _bytes_ in the program file after parsing your program term, those bytes are prepended to STDIN before your program runs.
 
-So, the program (hex) `20` described earlier (`λx.x`) is the identity/echo program, but (hex) `20 61 62 63` is a program that prepends `"abc"` to STDIN.
+So, the program `20` (hex) described earlier is the identity/echo program (`λx.x`), but `20 61 62 63` is a program that prepends `"abc"` to STDIN.
 
-This is useful as a sort of "data section" for your program: it can choose to have a few more ambient Church numbers lying around at the front of the list. Of course, it also makes writing _Hello, world!_ a lot simpler.
+This is useful as a sort of "data section" for your program: you can choose to have a few more ambient Church numbers lying around at the front of the list. Of course, it also makes writing _Hello, world!_ a lot simpler.
 
 ## The `.lam` assembler format
 
-See `examples/perm.lam`. Here is a quick overview:
+See `examples/perm.lam`. Here is a quick overview from the original docs:
 
     * (M N) = function application, M(N)
     * \a.M = abstraction, λa->M
