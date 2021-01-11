@@ -1,5 +1,5 @@
 lamb: lamb.hs
-	ghc --make lamb.hs -O2 -optc-O3 -fglasgow-exts -o lamb
+	ghc --make lamb.hs -O2 -optc-O3 -o lamb
 zip:
 	mkdir lambda
 	cp Makefile lamb.hs README lama lamd lambda
