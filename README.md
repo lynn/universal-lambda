@@ -26,7 +26,7 @@ So, the lambda term _λf. (λs. s s)(λx. f (x x))_ is encoded as:
 
 If there are leftover bits in the last byte when parsing your program term, they are ignored. For example, the identity program `00 10` may be represented by any single-byte program of the form `0010xxxx` (so any byte between `0x20` and `0x2F`).
 
-The contents of STDIN are encoded into a lambda term as described below. Your program term is applied to this term, and the result is decoded back into a character stream in the same format.
+The contents of STDIN are encoded into a lambda term as described below. Your program term is applied to this term, and the result is decoded back into a byte stream in the same format.
 
 ## I/O format
 
@@ -52,7 +52,7 @@ If there are leftover _bytes_ in the program file after parsing your program ter
 
 So, the program (hex) `20` described earlier (`λx.x`) is the identity/echo program, but (hex) `20 61 62 63` is a program that prepends `"abc"` to STDIN.
 
-This is useful as a sort of "data section" for your program: it can choose to have a little more ambient Church numbers lying around at the front of the list. Of course, it also makes writing _Hello, world!_ a lot simpler.
+This is useful as a sort of "data section" for your program: it can choose to have a few more ambient Church numbers lying around at the front of the list. Of course, it also makes writing _Hello, world!_ a lot simpler.
 
 ## The `.lam` assembler format
 
