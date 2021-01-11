@@ -1,19 +1,19 @@
 # Universal Lambda
-Universal Lambda is a purely functional [esolang](https://en.wikipedia.org/wiki/Esoteric_programming_language) based on John Tromp's [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html), with some ideas to accomodate I/O. It was made by Darren "flagitious" Smith in 2008, and the original site is [here](http://web.archive.org/web/20200707185352/http://www.golfscript.com/lam/). You can [code golf](https://en.wikipedia.org/wiki/Code_golf) in it on [anarchy golf](https://golf.shinh.org).
+Universal Lambda is a purely functional [esolang](https://en.wikipedia.org/wiki/Esoteric_programming_language) made by Darren "flagitious" Smith in 2008, based on John Tromp's [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html). You can [code golf](https://en.wikipedia.org/wiki/Code_golf) in it on [anarchy golf](https://golf.shinh.org).
 
-I'm maintaining the interpreter and tools on GitHub now, so that they work with recent versions of Haskell and Ruby. 
+I'm maintaining the interpreter and tools here now, so that they work with recent versions of Haskell and Ruby. The original site is [here](http://web.archive.org/web/20200707185352/http://www.golfscript.com/lam/).
 
 ## Usage
-Install [ghc](https://www.haskell.org/ghc/) and [Ruby](https://www.ruby-lang.org/en/). Run `make` to compile the interpreter. Then try:
+Install [ghc](https://www.haskell.org/ghc/) and [Ruby](https://www.ruby-lang.org/en/). Run `make` to compile the interpreter, `lamb`. Then try:
 
 ```bash
-./lama examples/perm.lam    # assembler
-./lamd examples/perm.lamb   # disassembler
+./lama examples/perm.lam    # assembler: emits perm.lamb
+./lamd examples/perm.lamb   # disassembler: writes to stdout
 echo -n "abc" | ./lamb examples/perm.lamb   # run "perm.lamb" with input
 ```
 
 ## Quick language description
-Your code is treated as a bit stream, and parsed as a term in the following grammar:
+Your code (a `.lamb` file) is treated as a bit stream, and parsed as a term in the following grammar:
 
 * `00 (term)` makes a lambda abstraction (_λx.term_).
 * `01 (term) (term)` applies two terms.
