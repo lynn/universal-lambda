@@ -1,0 +1,54 @@
+# newline = 10
+# 0 = 48
+# 9 = 57
+# B = 66 ('9'+9)
+# F = 70 ('B'+4)
+# i = 105 ('9'+'0')
+# u = 117 ('i'+12)
+# z = 122 ('u'+5)
+
+(\x.x \c9 x.
+  cons = \x y z.z x y
+  true = \x y.x
+  nil = \x y.y
+  pow = \x y.y x
+  succ = \n f x.f(n f x)
+  2 = succ \x.x
+  3 = succ 2
+  4 = pow 2 2
+  5 = succ 4
+  9 = pow 3 2
+  10 = succ 9
+  Y = \f.(\x.x x)(\x.f (x x))
+  pred = \n f x.n(\g h.h(g f))(\u.x)(\u.u)
+  prepend_digit = \a.cons (pred (a true)) a
+  d = 9 prepend_digit (cons c9 nil)  # "0123456789"
+  d1 = d nil  # "123456789"
+  foldr = \f z.Y(\self a.a (\l r z.f l (self r)) z)
+
+  # every 2 f 2 [u,v,w,x,y,z] = [  u,  v,f w,  x,  y,f z]
+  # every 2 f 1 [u,v,w,x,y,z] = [  u,f v,  w,  x,f y,  z]
+  every = \n f.Y(\self i a.a (\x xs z. i (\k.cons x (self (pred i) xs)) (cons (f x) (self n xs))) nil)
+
+  map = \f.foldr(\l r.cons (f l)r)nil
+  append = \a b.foldr cons b a
+  concatMap = \f.foldr (\a b. append (f a) b) nil
+  r1_9 = map (\c.cons c nil) d1
+  r10_99 = concatMap (\x. map (\y. cons x (cons y nil)) d) d1
+  r1_100 = append r1_9 (append r10_99 (cons nil nil))
+  4s = 4 succ
+  cB = 9 succ c9
+  cF = 4s cB
+  ci = d true succ c9  # '0' + '9' = 'i'
+  cu = 3 4s ci
+  cz = succ (4s cu)
+  zz = cons cz (cons cz nil)
+  Fizz = cons cF (cons ci zz)
+  Buzz = cons cB (cons cu zz)
+  every_ = \n f.every n f n
+  newline = 10
+  unlines = foldr(\l r. append l (cons newline r))nil
+  unlines (every_ 2 (append Fizz)
+          (every_ 4 (\k.Buzz)
+          (every_ 2 (\k.nil) r1_100)))
+) "9
