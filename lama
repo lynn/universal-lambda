@@ -97,10 +97,10 @@ def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
     parseh(vars, depth, nil,t)
   when ')',:eof,"\n","'",'"'
     if t=='"'
-      $prepend=eval'"'+$rhs+'"'
+      $prepend=eval'"'+$rhs.strip+'"'
       t=:eof
     elsif t=="'"
-      $prepend=$rhs
+      $prepend=$rhs.strip
       t=:eof
     end
     if t!=Bracket[lb]
@@ -128,7 +128,7 @@ def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
   else
     unexpect(t)
   end
-  
+
   r=[:apply,lhs,r] if lhs
   parseh(vars, depth, r,lb,lambda)
 end
@@ -141,7 +141,7 @@ def parse(s)
   $errors=[]
   $unstep=[]
   $prepend=""
-  
+
   tree=parseh
   exit(1) if $errors.size>0
   tree
