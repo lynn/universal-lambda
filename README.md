@@ -67,14 +67,16 @@ See `examples/perm.lam`. Here is a quick overview from the original docs:
     * Assignment can be used with the = operator and ended with a newline,
       it can then be used like a bound variable. Keep in mind however that
       this is purely syntactic sugar. For example:
-      
+
         a=x y z
         a b a
-      
+
       is converted to:
-      
+
         (\a.a b a)(x y z)
 
 The last line in the .lam file is not a definition, but your program term. It can end with an unmatched `"` or `'` to provide a data section, like so:
 
     (\a. a) "Hello, world!\n
+
+Note: I added a feature where you can use e.g. `__2` to directly refer to the raw De Bruijn variable with index 2 (`110`), whatever it may be. Sometimes this is useful for weird code golf byte-saves.

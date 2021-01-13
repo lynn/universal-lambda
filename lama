@@ -74,6 +74,7 @@ def unstep(c)
 end
 
 ID=/[a-zA-Z0-9_]+/m
+RAW_VAR=/^__([0-9]+)$/
 Bracket={:bof=>:eof,'('=>')','='=>"\n"}
 
 def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
@@ -112,6 +113,8 @@ def parseh(vars={},depth=0,lhs=nil,lb=:bof,lambda=false)
     end
     unstep(t) if lambda
     return lhs unless lb==:bof && t != :eof
+  when RAW_VAR
+    [:id, $1.to_i]
   when ID
     if peek=='='
       rhs=parseh(vars,depth,nil,step)
