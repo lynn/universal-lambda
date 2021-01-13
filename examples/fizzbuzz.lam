@@ -1,31 +1,27 @@
 # If you have a non-empty list "a", you can unpack it with "a \x xs. expr".
-# Let's use this to unpack our whole data section into (nl:cB:cF:ci:cu:zd), where zd is ('z':digits).
-(\I. I \nl I. I \cB I. I \cF I. I \ci I. I \cu zd.
+# Let's use this to unpack our whole data section into (nl:'B':'F':'i':'u':'z':"0123456789").
+(\I. I \nl I. I \cB I. I \cF I. I \ci I. I \cu I. I \cz d.
   # Some useful functions:
   cons = \x y z.z x y
-  true = \x y.x
   nil = \x y.y
+  zz = cons cz (cons cz nil)
   Y = \f.(\x.x x)(\x.f (x x))
   foldr = \f z.Y(\self a.a (\l r z.f l (self r)) z)
-  flip_app = foldr cons
-  app = \a b.flip_app b a
+  rappend = foldr cons
+  append = \a b.rappend b a
   map = \f.foldr(\l r.cons (f l)r)nil
 
-  # Create the list r1_100 = ["1","2",...,"99",???] via a Cartesian product.
-  # We will overwrite the final element with "Buzz", so it doesn't matter what it is.
-  # (cons nil nil) would be proper. __3 (variable 1110) magically seems to work and save a byte.
-  d = zd nil
-  concatMap = \f.foldr (\a b. flip_app b (f a)) nil
+  # Create r0_99 = ["0","1",..."99"] via a Cartesian product.
+  concatMap = \f.foldr (\a b. rappend b (f a)) nil
   fd = map cons d
   fd1 = cons (\a.a) (fd nil)
   r0_99 = concatMap (\x. map (\y. x (y nil)) fd) fd1
-  r1_100 = app (r0_99 nil) __3
 
-  # Create "Fizz" and "Buzz" strings.
-  cz = zd true
-  zz = cons cz (cons cz nil)
-  Fizz = cons cF (cons ci zz)
-  Buzz = cons cB (cons cu zz)
+  # Now create r1_100 = ["1","2",...,"99"] ++ ???.
+  # We will overwrite the final element with "Buzz", so it doesn't matter what it is.
+  # "(cons nil nil)" i.e. [""] would be proper.
+  # "fd" magically seems to look like a cons-cell and save a byte?
+  r1_100 = append (r0_99 nil) fd
 
   # Some higher-order functions:
   #   m1   f c (x:xs) = f x : c xs
@@ -43,8 +39,12 @@
   m5 = p1 (p1 m3)
   e3 = \f.Y(m3 f)
   e5 = \f.Y(m5 f)
-  unlines = foldr (\l r. app l (cons nl r)) nil
-  unlines (e5 (flip_app Buzz)
+  Fizz = cons cF (cons ci zz)
+  Buzz = cons cB (cons cu zz)
+
+  # Here again, "m3" is used instead of the proper "nil" to save space.
+  unlines = foldr (\l r. append l (cons nl r)) m3
+  unlines (e5 (rappend Buzz)
           (e3 (\k.Fizz)
           (e5 (\k.nil) r1_100)))
 ) "\nBFiuz0123456789
